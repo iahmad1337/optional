@@ -170,7 +170,7 @@ TEST(optional_testing, emplace) {
   a.emplace(1, 2, 3, std::unique_ptr<int>());
   EXPECT_TRUE(static_cast<bool>(a));
 }
-
+namespace {
 struct throw_in_ctor {
   struct exception : std::exception {
     using std::exception::exception;
@@ -181,10 +181,9 @@ struct throw_in_ctor {
       throw exception();
   }
 
-  static bool enable_throw;
+  static inline bool enable_throw = false;
 };
-
-bool throw_in_ctor::enable_throw = false;
+} // namespace
 
 TEST(optional_testing, emplace_throw) {
   optional<throw_in_ctor> a(in_place, 1, 2);
@@ -257,7 +256,7 @@ TEST(optional_testing, comparison_empty_and_empty) {
   EXPECT_FALSE(b > a);
   EXPECT_TRUE(b >= a);
 }
-
+namespace {
 struct cvalue {
   constexpr cvalue() : value(0) {}
 
@@ -277,6 +276,7 @@ struct cvalue {
 private:
   int value;
 };
+} // namespace
 
 static_assert(std::is_trivially_destructible_v<optional<int>>);
 static_assert(std::is_trivially_copyable_v<optional<int>>);
@@ -289,10 +289,66 @@ static_assert(std::is_copy_assignable_v<optional<std::vector<int>>>);
 static_assert(std::is_move_constructible_v<optional<std::vector<int>>>);
 static_assert(std::is_move_assignable_v<optional<std::vector<int>>>);
 
+namespace {
+struct non_copy_assignable {
+  non_copy_assignable(const non_copy_assignable&) = default;
+  non_copy_assignable(non_copy_assignable&&) = default;
+  non_copy_assignable& operator=(const non_copy_assignable&) = delete;
+  non_copy_assignable& operator=(non_copy_assignable&&) = default;
+};
+static_assert(std::is_copy_constructible_v<optional<non_copy_assignable>>);
+static_assert(!std::is_copy_assignable_v<optional<non_copy_assignable>>);
+static_assert(std::is_move_constructible_v<optional<non_copy_assignable>>);
+static_assert(std::is_move_assignable_v<optional<non_copy_assignable>>);
+
+struct non_copyable {
+  non_copyable(const non_copyable&) = delete;
+  non_copyable(non_copyable&&) = delete;
+  non_copyable& operator=(const non_copyable&) = default;
+  non_copyable& operator=(non_copyable&&) = default;
+};
+static_assert(!std::is_copy_constructible_v<optional<non_copyable>>);
+static_assert(!std::is_move_constructible_v<optional<non_copyable>>);
+
+struct non_assignable {
+  non_assignable(const non_assignable&) = default;
+  non_assignable(non_assignable&&) = default;
+  non_assignable& operator=(const non_assignable&) = delete;
+  non_assignable& operator=(non_assignable&&) = delete;
+};
+static_assert(std::is_copy_constructible_v<optional<non_assignable>>);
+static_assert(!std::is_copy_assignable_v<optional<non_assignable>>);
+static_assert(std::is_move_constructible_v<optional<non_assignable>>);
+static_assert(!std::is_move_assignable_v<optional<non_assignable>>);
+
+// only movable
 static_assert(!std::is_copy_constructible_v<optional<std::unique_ptr<int>>>);
 static_assert(!std::is_copy_assignable_v<optional<std::unique_ptr<int>>>);
 static_assert(std::is_move_constructible_v<optional<std::unique_ptr<int>>>);
 static_assert(std::is_move_assignable_v<optional<std::unique_ptr<int>>>);
+
+struct only_move_constructible {
+  only_move_constructible(const only_move_constructible&) = delete;
+  only_move_constructible(only_move_constructible&&) = default;
+  only_move_constructible& operator=(const only_move_constructible&) = delete;
+  only_move_constructible& operator=(only_move_constructible&&) = delete;
+};
+static_assert(!std::is_copy_constructible_v<optional<only_move_constructible>>);
+static_assert(!std::is_copy_assignable_v<optional<only_move_constructible>>);
+static_assert(std::is_move_constructible_v<optional<only_move_constructible>>);
+static_assert(!std::is_move_assignable_v<optional<only_move_constructible>>);
+
+struct nothing {
+  nothing(const nothing&) = delete;
+  nothing(nothing&&) = delete;
+  nothing& operator=(const nothing&) = delete;
+  nothing& operator=(nothing&&) = delete;
+};
+static_assert(!std::is_copy_constructible_v<optional<nothing>>);
+static_assert(!std::is_copy_assignable_v<optional<nothing>>);
+static_assert(!std::is_move_constructible_v<optional<nothing>>);
+static_assert(!std::is_move_assignable_v<optional<nothing>>);
+} // namespace
 
 static_assert([] {
   optional<cvalue> a;
