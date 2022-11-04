@@ -278,16 +278,20 @@ private:
 };
 } // namespace
 
-static_assert(std::is_trivially_destructible_v<optional<int>>);
-static_assert(std::is_trivially_copyable_v<optional<int>>);
+TEST(optional_traits, triviality) {
+  EXPECT_TRUE(std::is_trivially_destructible_v<optional<int>>);
+  EXPECT_TRUE(std::is_trivially_copyable_v<optional<int>>);
 
-static_assert(!std::is_trivially_destructible_v<optional<std::vector<int>>>);
-static_assert(!std::is_trivially_copyable_v<optional<std::vector<int>>>);
+  EXPECT_FALSE(std::is_trivially_destructible_v<optional<std::vector<int>>>);
+  EXPECT_FALSE(std::is_trivially_copyable_v<optional<std::vector<int>>>);
+}
 
-static_assert(std::is_copy_constructible_v<optional<std::vector<int>>>);
-static_assert(std::is_copy_assignable_v<optional<std::vector<int>>>);
-static_assert(std::is_move_constructible_v<optional<std::vector<int>>>);
-static_assert(std::is_move_assignable_v<optional<std::vector<int>>>);
+TEST(optional_traits, all_permited) {
+  EXPECT_TRUE(std::is_copy_constructible_v<optional<std::vector<int>>>);
+  EXPECT_TRUE(std::is_copy_assignable_v<optional<std::vector<int>>>);
+  EXPECT_TRUE(std::is_move_constructible_v<optional<std::vector<int>>>);
+  EXPECT_TRUE(std::is_move_assignable_v<optional<std::vector<int>>>);
+}
 
 namespace {
 struct non_copy_assignable {
@@ -296,10 +300,13 @@ struct non_copy_assignable {
   non_copy_assignable& operator=(const non_copy_assignable&) = delete;
   non_copy_assignable& operator=(non_copy_assignable&&) = default;
 };
-static_assert(std::is_copy_constructible_v<optional<non_copy_assignable>>);
-static_assert(!std::is_copy_assignable_v<optional<non_copy_assignable>>);
-static_assert(std::is_move_constructible_v<optional<non_copy_assignable>>);
-static_assert(std::is_move_assignable_v<optional<non_copy_assignable>>);
+
+TEST(optional_traits, non_copy_assignable) {
+  EXPECT_TRUE(std::is_copy_constructible_v<optional<non_copy_assignable>>);
+  EXPECT_FALSE(std::is_copy_assignable_v<optional<non_copy_assignable>>);
+  EXPECT_TRUE(std::is_move_constructible_v<optional<non_copy_assignable>>);
+  EXPECT_TRUE(std::is_move_assignable_v<optional<non_copy_assignable>>);
+}
 
 struct non_copyable {
   non_copyable(const non_copyable&) = delete;
@@ -307,8 +314,11 @@ struct non_copyable {
   non_copyable& operator=(const non_copyable&) = default;
   non_copyable& operator=(non_copyable&&) = default;
 };
-static_assert(!std::is_copy_constructible_v<optional<non_copyable>>);
-static_assert(!std::is_move_constructible_v<optional<non_copyable>>);
+
+TEST(optional_traits, non_copyable) {
+  EXPECT_FALSE(std::is_copy_constructible_v<optional<non_copyable>>);
+  EXPECT_FALSE(std::is_move_constructible_v<optional<non_copyable>>);
+}
 
 struct non_assignable {
   non_assignable(const non_assignable&) = default;
@@ -316,16 +326,20 @@ struct non_assignable {
   non_assignable& operator=(const non_assignable&) = delete;
   non_assignable& operator=(non_assignable&&) = delete;
 };
-static_assert(std::is_copy_constructible_v<optional<non_assignable>>);
-static_assert(!std::is_copy_assignable_v<optional<non_assignable>>);
-static_assert(std::is_move_constructible_v<optional<non_assignable>>);
-static_assert(!std::is_move_assignable_v<optional<non_assignable>>);
 
-// only movable
-static_assert(!std::is_copy_constructible_v<optional<std::unique_ptr<int>>>);
-static_assert(!std::is_copy_assignable_v<optional<std::unique_ptr<int>>>);
-static_assert(std::is_move_constructible_v<optional<std::unique_ptr<int>>>);
-static_assert(std::is_move_assignable_v<optional<std::unique_ptr<int>>>);
+TEST(optional_traits, non_assignable) {
+  EXPECT_TRUE(std::is_copy_constructible_v<optional<non_assignable>>);
+  EXPECT_FALSE(std::is_copy_assignable_v<optional<non_assignable>>);
+  EXPECT_TRUE(std::is_move_constructible_v<optional<non_assignable>>);
+  EXPECT_FALSE(std::is_move_assignable_v<optional<non_assignable>>);
+}
+
+TEST(optional_traits, only_movable) {
+  EXPECT_FALSE(std::is_copy_constructible_v<optional<std::unique_ptr<int>>>);
+  EXPECT_FALSE(std::is_copy_assignable_v<optional<std::unique_ptr<int>>>);
+  EXPECT_TRUE(std::is_move_constructible_v<optional<std::unique_ptr<int>>>);
+  EXPECT_TRUE(std::is_move_assignable_v<optional<std::unique_ptr<int>>>);
+}
 
 struct only_move_constructible {
   only_move_constructible(const only_move_constructible&) = delete;
@@ -333,10 +347,13 @@ struct only_move_constructible {
   only_move_constructible& operator=(const only_move_constructible&) = delete;
   only_move_constructible& operator=(only_move_constructible&&) = delete;
 };
-static_assert(!std::is_copy_constructible_v<optional<only_move_constructible>>);
-static_assert(!std::is_copy_assignable_v<optional<only_move_constructible>>);
-static_assert(std::is_move_constructible_v<optional<only_move_constructible>>);
-static_assert(!std::is_move_assignable_v<optional<only_move_constructible>>);
+
+TEST(optional_traits, only_move_constructible) {
+  EXPECT_FALSE(std::is_copy_constructible_v<optional<only_move_constructible>>);
+  EXPECT_FALSE(std::is_copy_assignable_v<optional<only_move_constructible>>);
+  EXPECT_TRUE(std::is_move_constructible_v<optional<only_move_constructible>>);
+  EXPECT_FALSE(std::is_move_assignable_v<optional<only_move_constructible>>);
+}
 
 struct nothing {
   nothing(const nothing&) = delete;
@@ -344,10 +361,14 @@ struct nothing {
   nothing& operator=(const nothing&) = delete;
   nothing& operator=(nothing&&) = delete;
 };
-static_assert(!std::is_copy_constructible_v<optional<nothing>>);
-static_assert(!std::is_copy_assignable_v<optional<nothing>>);
-static_assert(!std::is_move_constructible_v<optional<nothing>>);
-static_assert(!std::is_move_assignable_v<optional<nothing>>);
+
+TEST(optional_traits, nothing) {
+  EXPECT_FALSE(std::is_copy_constructible_v<optional<nothing>>);
+  EXPECT_FALSE(std::is_copy_assignable_v<optional<nothing>>);
+  EXPECT_FALSE(std::is_move_constructible_v<optional<nothing>>);
+  EXPECT_FALSE(std::is_move_assignable_v<optional<nothing>>);
+}
+
 } // namespace
 
 static_assert([] {
