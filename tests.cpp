@@ -281,6 +281,19 @@ private:
 static_assert(std::is_trivially_destructible_v<optional<int>>);
 static_assert(std::is_trivially_copyable_v<optional<int>>);
 
+static_assert(!std::is_trivially_destructible_v<optional<std::vector<int>>>);
+static_assert(!std::is_trivially_copyable_v<optional<std::vector<int>>>);
+
+static_assert(std::is_copy_constructible_v<optional<std::vector<int>>>);
+static_assert(std::is_copy_assignable_v<optional<std::vector<int>>>);
+static_assert(std::is_move_constructible_v<optional<std::vector<int>>>);
+static_assert(std::is_move_assignable_v<optional<std::vector<int>>>);
+
+static_assert(!std::is_copy_constructible_v<optional<std::unique_ptr<int>>>);
+static_assert(!std::is_copy_assignable_v<optional<std::unique_ptr<int>>>);
+static_assert(std::is_move_constructible_v<optional<std::unique_ptr<int>>>);
+static_assert(std::is_move_assignable_v<optional<std::unique_ptr<int>>>);
+
 static_assert([] {
   optional<cvalue> a;
   return !static_cast<bool>(a);
@@ -344,4 +357,28 @@ static_assert([] {
 static_assert([] {
   optional<int> a(43), b(42);
   return a >= b;
+}());
+
+static_assert([] {
+  optional<int> a(43);
+  optional<int> b(a);
+  return a == b;
+}());
+
+static_assert([] {
+  optional<int> a(43);
+  optional<int> b(std::move(a));
+  return b && *b == 43;
+}());
+
+static_assert([] {
+  optional<int> a(43), b(42);
+  a = b;
+  return a == b;
+}());
+
+static_assert([] {
+  optional<int> a(43), b(42);
+  a = std::move(b);
+  return *a == 42;
 }());
