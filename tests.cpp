@@ -379,6 +379,22 @@ TEST(optional_traits, nothing) {
   EXPECT_FALSE(std::is_move_assignable_v<optional<nothing>>);
 }
 
+struct non_trivial_nothing {
+  non_trivial_nothing(const non_trivial_nothing&) = delete;
+  non_trivial_nothing(non_trivial_nothing&&) = delete;
+  non_trivial_nothing& operator=(const non_trivial_nothing&) = delete;
+  non_trivial_nothing& operator=(non_trivial_nothing&&) = delete;
+
+  std::vector<int> data;
+};
+
+TEST(optional_traits, non_trivial_nothing) {
+  EXPECT_FALSE(std::is_copy_constructible_v<optional<non_trivial_nothing>>);
+  EXPECT_FALSE(std::is_copy_assignable_v<optional<non_trivial_nothing>>);
+  EXPECT_FALSE(std::is_move_constructible_v<optional<non_trivial_nothing>>);
+  EXPECT_FALSE(std::is_move_assignable_v<optional<non_trivial_nothing>>);
+}
+
 } // namespace
 
 static_assert([] {
