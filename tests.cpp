@@ -303,9 +303,9 @@ TEST(traits, default_constructor) {
   using optional2 = optional<no_default_t>;
   using optional3 = optional<throwing_default_t>;
   ASSERT_TRUE(std::is_default_constructible_v<optional1>);
-  ASSERT_FALSE(std::is_default_constructible_v<optional2>);
+  ASSERT_TRUE(std::is_default_constructible_v<optional2>);
   ASSERT_TRUE(std::is_nothrow_default_constructible_v<optional1>);
-  ASSERT_FALSE(std::is_nothrow_default_constructible_v<optional3>);
+  ASSERT_TRUE(std::is_nothrow_default_constructible_v<optional3>);
 }
 
 TEST(traits, copy_constructor) {
@@ -336,18 +336,20 @@ TEST(traits, move_constructor) {
 }
 
 TEST(traits, in_place) {
-  using optional1 = optional<no_default_t>;
-  bool construct1 =
-      std::is_constructible_v<optional1, in_place_t, throwing_move_operator_t>;
-  bool construct2 = std::is_constructible_v<optional1, in_place_t, dummy_t>;
+  bool construct1 = std::is_constructible_v<optional<int>, in_place_t,
+                                            throwing_move_operator_t>;
+  bool construct2 =
+      std::is_constructible_v<optional<dummy_t>, in_place_t, dummy_t>;
   bool construct3 =
-      std::is_constructible_v<optional1, in_place_t, no_default_t>;
-  bool construct4 = std::is_constructible_v<optional1, in_place_t, size_t>;
-  bool construct5 = std::is_constructible_v<optional1, in_place_t, size_t>;
-  bool construct6 = std::is_constructible_v<optional1, in_place_t>;
+      std::is_constructible_v<optional<no_default_t>, in_place_t, no_default_t>;
+  bool construct4 = std::is_constructible_v<optional<std::vector<int>>,
+                                            in_place_t, size_t, int>;
+  bool construct5 =
+      std::is_constructible_v<optional<std::vector<int>>, in_place_t, size_t>;
+  bool construct6 = std::is_constructible_v<optional<std::string>, in_place_t>;
   ASSERT_FALSE(construct1);
   ASSERT_TRUE(construct2);
-  ASSERT_FALSE(construct3);
+  ASSERT_TRUE(construct3);
   ASSERT_TRUE(construct4);
   ASSERT_TRUE(construct5);
   ASSERT_TRUE(construct6);
@@ -374,7 +376,7 @@ TEST(traits, copy_assignment) {
 TEST(traits, move_assignment) {
   using optional1 = optional<no_move_t>;
   using optional2 = optional<no_move_assignment_t>;
-  using optional3 = optional<dummy_t>;
+  using optional3 = optional<std::vector<double>>;
   using optional4 = optional<std::string>;
   using optional5 = optional<dummy_t>;
   using optional6 = optional<throwing_move_operator_t>;
