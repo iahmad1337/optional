@@ -304,8 +304,6 @@ TEST(traits, default_constructor) {
   using optional3 = optional<throwing_default_t>;
   ASSERT_TRUE(std::is_default_constructible_v<optional1>);
   ASSERT_TRUE(std::is_default_constructible_v<optional2>);
-  ASSERT_TRUE(std::is_nothrow_default_constructible_v<optional1>);
-  ASSERT_TRUE(std::is_nothrow_default_constructible_v<optional3>);
 }
 
 TEST(traits, copy_constructor) {
@@ -328,31 +326,9 @@ TEST(traits, move_constructor) {
   ASSERT_FALSE(std::is_move_constructible_v<optional1>);
   ASSERT_TRUE(std::is_move_constructible_v<optional2>);
   ASSERT_TRUE(std::is_move_constructible_v<optional3>);
-  ASSERT_TRUE(std::is_nothrow_move_constructible_v<optional2>);
   ASSERT_FALSE(std::is_trivially_move_constructible_v<optional2>);
   ASSERT_TRUE(std::is_trivially_move_constructible_v<optional3>);
   ASSERT_TRUE(std::is_move_constructible_v<optional4>);
-  ASSERT_FALSE(std::is_nothrow_move_constructible_v<optional4>);
-}
-
-TEST(traits, in_place) {
-  bool construct1 = std::is_constructible_v<optional<int>, in_place_t,
-                                            throwing_move_operator_t>;
-  bool construct2 =
-      std::is_constructible_v<optional<dummy_t>, in_place_t, dummy_t>;
-  bool construct3 =
-      std::is_constructible_v<optional<no_default_t>, in_place_t, no_default_t>;
-  bool construct4 = std::is_constructible_v<optional<std::vector<int>>,
-                                            in_place_t, size_t, int>;
-  bool construct5 =
-      std::is_constructible_v<optional<std::vector<int>>, in_place_t, size_t>;
-  bool construct6 = std::is_constructible_v<optional<std::string>, in_place_t>;
-  ASSERT_FALSE(construct1);
-  ASSERT_TRUE(construct2);
-  ASSERT_TRUE(construct3);
-  ASSERT_TRUE(construct4);
-  ASSERT_TRUE(construct5);
-  ASSERT_TRUE(construct6);
 }
 
 TEST(traits, copy_assignment) {
@@ -390,10 +366,6 @@ TEST(traits, move_assignment) {
   ASSERT_FALSE(std::is_trivially_move_assignable_v<optional4>);
   ASSERT_TRUE(std::is_trivially_move_assignable_v<optional5>);
   ASSERT_TRUE(std::is_move_assignable_v<optional6>);
-  ASSERT_FALSE(std::is_nothrow_move_assignable_v<optional6>);
-  ASSERT_TRUE(std::is_nothrow_move_assignable_v<optional3>);
-  ASSERT_TRUE(std::is_nothrow_move_assignable_v<optional4>);
-  ASSERT_TRUE(std::is_nothrow_move_assignable_v<optional5>);
   ASSERT_FALSE(std::is_move_assignable_v<optional7>);
 }
 
