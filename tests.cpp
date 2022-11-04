@@ -1,12 +1,32 @@
 #include "gtest/gtest.h"
+#include "optional.h"
+#include "test_object.h"
 #include <stdexcept>
 
-static void throwing_func() {
-  throw std::logic_error("some exception");
-}
+namespace {
+struct no_default_ctor : test_object {
+  using test_object::test_object;
+  no_default_ctor() = delete;
+};
 
-TEST(something, test_abi) {
-  EXPECT_THROW(throwing_func(), std::logic_error);
+struct only_moveable : test_object {
+  using test_object::test_object;
+  only_moveable(only_moveable const&) = delete;
+  only_moveable& operator=(only_moveable const&) = delete;
+
+  only_moveable(only_moveable&& other) noexcept
+      : test_object(std::move(other)) {}
+
+  only_moveable& operator=(only_moveable&& other) noexcept {
+    static_cast<test_object&>(*this) = std::move(other);
+    return *this;
+  }
+};
+} // namespace
+
+TEST(optional_testing, default_ctor) {
+  optional<no_default_ctor> a;
+  EXPECT_FALSE(static_cast<bool>(a));
 }
 
 TEST(optional_testing, default_ctor_2) {
