@@ -1,7 +1,10 @@
-#include "gtest/gtest.h"
 #include "optional.h"
+#include "test_classes.h"
 #include "test_object.h"
+#include "gtest/gtest.h"
 #include <stdexcept>
+#include <string>
+#include <vector>
 
 namespace {
 struct no_default_ctor : test_object {
@@ -9,15 +12,14 @@ struct no_default_ctor : test_object {
   no_default_ctor() = delete;
 };
 
-struct only_moveable : test_object {
+struct only_movable : test_object {
   using test_object::test_object;
-  only_moveable(only_moveable const&) = delete;
-  only_moveable& operator=(only_moveable const&) = delete;
+  only_movable(only_movable const&) = delete;
+  only_movable& operator=(only_movable const&) = delete;
 
-  only_moveable(only_moveable&& other) noexcept
-      : test_object(std::move(other)) {}
+  only_movable(only_movable&& other) noexcept : test_object(std::move(other)) {}
 
-  only_moveable& operator=(only_moveable&& other) noexcept {
+  only_movable& operator=(only_movable&& other) noexcept {
     static_cast<test_object&>(*this) = std::move(other);
     return *this;
   }
@@ -82,8 +84,8 @@ TEST(optional_testing, copy_ctor_empty) {
 
 TEST(optional_testing, move_ctor) {
   test_object::no_new_instances_guard g;
-  optional<only_moveable> a(42);
-  optional<only_moveable> b = std::move(a);
+  optional<only_movable> a(42);
+  optional<only_movable> b = std::move(a);
   EXPECT_TRUE(static_cast<bool>(b));
   EXPECT_EQ(42, *b);
 }
@@ -127,14 +129,14 @@ TEST(optional_testing, assignment) {
 
 TEST(optional_testing, move_assignment_empty_empty) {
   test_object::no_new_instances_guard g;
-  optional<only_moveable> a, b;
+  optional<only_movable> a, b;
   b = std::move(a);
   EXPECT_FALSE(static_cast<bool>(b));
 }
 
 TEST(optional_testing, move_assignment_to_empty) {
   test_object::no_new_instances_guard g;
-  optional<only_moveable> a(42), b;
+  optional<only_movable> a(42), b;
   b = std::move(a);
   EXPECT_TRUE(static_cast<bool>(b));
   EXPECT_EQ(42, *b);
@@ -142,14 +144,14 @@ TEST(optional_testing, move_assignment_to_empty) {
 
 TEST(optional_testing, move_assignment_from_empty) {
   test_object::no_new_instances_guard g;
-  optional<only_moveable> a, b(42);
+  optional<only_movable> a, b(42);
   b = std::move(a);
   EXPECT_FALSE(static_cast<bool>(b));
 }
 
 TEST(optional_testing, move_assignment) {
   test_object::no_new_instances_guard g;
-  optional<only_moveable> a(42), b(41);
+  optional<only_movable> a(42), b(41);
   b = std::move(a);
   EXPECT_TRUE(static_cast<bool>(b));
   EXPECT_EQ(42, *b);
@@ -289,124 +291,109 @@ private:
 };
 } // namespace
 
-TEST(optional_traits, triviality) {
-  EXPECT_TRUE(std::is_trivially_destructible_v<optional<int>>);
-  EXPECT_TRUE(std::is_trivially_copyable_v<optional<int>>);
-
-  EXPECT_FALSE(std::is_trivially_destructible_v<optional<std::vector<int>>>);
-  EXPECT_FALSE(std::is_trivially_copyable_v<optional<std::vector<int>>>);
+TEST(traits, destructor) {
+  using optional1 = optional<int>;
+  using optional2 = optional<std::string>;
+  ASSERT_TRUE(std::is_trivially_destructible_v<optional1>);
+  ASSERT_FALSE(std::is_trivially_destructible_v<optional2>);
 }
 
-TEST(optional_traits, all_permited) {
-  EXPECT_TRUE(std::is_copy_constructible_v<optional<std::vector<int>>>);
-  EXPECT_TRUE(std::is_copy_assignable_v<optional<std::vector<int>>>);
-  EXPECT_TRUE(std::is_move_constructible_v<optional<std::vector<int>>>);
-  EXPECT_TRUE(std::is_move_assignable_v<optional<std::vector<int>>>);
+TEST(traits, default_constructor) {
+  using optional1 = optional<std::vector<int>>;
+  using optional2 = optional<no_default_t>;
+  using optional3 = optional<throwing_default_t>;
+  ASSERT_TRUE(std::is_default_constructible_v<optional1>);
+  ASSERT_FALSE(std::is_default_constructible_v<optional2>);
+  ASSERT_TRUE(std::is_nothrow_default_constructible_v<optional1>);
+  ASSERT_FALSE(std::is_nothrow_default_constructible_v<optional3>);
 }
 
-namespace {
-struct non_copy_assignable {
-  non_copy_assignable(const non_copy_assignable&) = default;
-  non_copy_assignable(non_copy_assignable&&) = default;
-  non_copy_assignable& operator=(const non_copy_assignable&) = delete;
-  non_copy_assignable& operator=(non_copy_assignable&&) = default;
-
-  std::vector<int> v;
-};
-
-TEST(optional_traits, non_copy_assignable) {
-  EXPECT_TRUE(std::is_copy_constructible_v<optional<non_copy_assignable>>);
-  EXPECT_FALSE(std::is_copy_assignable_v<optional<non_copy_assignable>>);
-  EXPECT_TRUE(std::is_move_constructible_v<optional<non_copy_assignable>>);
-  EXPECT_TRUE(std::is_move_assignable_v<optional<non_copy_assignable>>);
+TEST(traits, copy_constructor) {
+  using optional1 = optional<no_copy_t>;
+  using optional2 = optional<std::vector<std::string>>;
+  using optional3 = optional<dummy_t>;
+  using optional4 = optional<non_trivial_copy_t>;
+  ASSERT_FALSE(std::is_copy_constructible_v<optional1>);
+  ASSERT_TRUE(std::is_copy_constructible_v<optional2>);
+  ASSERT_FALSE(std::is_trivially_copy_constructible_v<optional2>);
+  ASSERT_TRUE(std::is_trivially_copy_constructible_v<optional3>);
+  ASSERT_FALSE(std::is_trivially_copy_constructible_v<optional4>);
 }
 
-struct non_copyable {
-  non_copyable(const non_copyable&) = delete;
-  non_copyable(non_copyable&&) = delete;
-  non_copyable& operator=(const non_copyable&) = default;
-  non_copyable& operator=(non_copyable&&) = default;
-
-  std::vector<int> v;
-};
-
-TEST(optional_traits, non_copyable) {
-  EXPECT_FALSE(std::is_copy_constructible_v<optional<non_copyable>>);
-  EXPECT_FALSE(std::is_move_constructible_v<optional<non_copyable>>);
+TEST(traits, move_constructor) {
+  using optional1 = optional<no_move_t>;
+  using optional2 = optional<std::string>;
+  using optional3 = optional<dummy_t>;
+  using optional4 = optional<throwing_move_operator_t>;
+  ASSERT_FALSE(std::is_move_constructible_v<optional1>);
+  ASSERT_TRUE(std::is_move_constructible_v<optional2>);
+  ASSERT_TRUE(std::is_move_constructible_v<optional3>);
+  ASSERT_TRUE(std::is_nothrow_move_constructible_v<optional2>);
+  ASSERT_FALSE(std::is_trivially_move_constructible_v<optional2>);
+  ASSERT_TRUE(std::is_trivially_move_constructible_v<optional3>);
+  ASSERT_TRUE(std::is_move_constructible_v<optional4>);
+  ASSERT_FALSE(std::is_nothrow_move_constructible_v<optional4>);
 }
 
-struct non_assignable {
-  non_assignable(const non_assignable&) = default;
-  non_assignable(non_assignable&&) = default;
-  non_assignable& operator=(const non_assignable&) = delete;
-  non_assignable& operator=(non_assignable&&) = delete;
-
-  std::vector<int> v;
-};
-
-TEST(optional_traits, non_assignable) {
-  EXPECT_TRUE(std::is_copy_constructible_v<optional<non_assignable>>);
-  EXPECT_FALSE(std::is_copy_assignable_v<optional<non_assignable>>);
-  EXPECT_TRUE(std::is_move_constructible_v<optional<non_assignable>>);
-  EXPECT_FALSE(std::is_move_assignable_v<optional<non_assignable>>);
+TEST(traits, in_place) {
+  using optional1 = optional<no_default_t>;
+  bool construct1 =
+      std::is_constructible_v<optional1, in_place_t, throwing_move_operator_t>;
+  bool construct2 = std::is_constructible_v<optional1, in_place_t, dummy_t>;
+  bool construct3 =
+      std::is_constructible_v<optional1, in_place_t, no_default_t>;
+  bool construct4 = std::is_constructible_v<optional1, in_place_t, size_t>;
+  bool construct5 = std::is_constructible_v<optional1, in_place_t, size_t>;
+  bool construct6 = std::is_constructible_v<optional1, in_place_t>;
+  ASSERT_FALSE(construct1);
+  ASSERT_TRUE(construct2);
+  ASSERT_FALSE(construct3);
+  ASSERT_TRUE(construct4);
+  ASSERT_TRUE(construct5);
+  ASSERT_TRUE(construct6);
 }
 
-TEST(optional_traits, only_movable) {
-  EXPECT_FALSE(std::is_copy_constructible_v<optional<std::unique_ptr<int>>>);
-  EXPECT_FALSE(std::is_copy_assignable_v<optional<std::unique_ptr<int>>>);
-  EXPECT_TRUE(std::is_move_constructible_v<optional<std::unique_ptr<int>>>);
-  EXPECT_TRUE(std::is_move_assignable_v<optional<std::unique_ptr<int>>>);
+TEST(traits, copy_assignment) {
+  using optional1 = optional<no_copy_t>;
+  using optional2 = optional<no_copy_assignment_t>;
+  using optional3 = optional<non_trivial_copy_assignment_t>;
+  using optional4 = optional<non_trivial_copy_t>;
+  using optional5 = optional<dummy_t>;
+  using optional6 = optional<no_copy_t>;
+  ASSERT_FALSE(std::is_copy_assignable_v<optional1>);
+  ASSERT_FALSE(std::is_copy_assignable_v<optional2>);
+  ASSERT_TRUE(std::is_copy_assignable_v<optional3>);
+  ASSERT_TRUE(std::is_copy_assignable_v<optional4>);
+  ASSERT_TRUE(std::is_copy_assignable_v<optional5>);
+  ASSERT_FALSE(std::is_trivially_copy_assignable_v<optional3>);
+  ASSERT_FALSE(std::is_trivially_copy_assignable_v<optional4>);
+  ASSERT_TRUE(std::is_trivially_copy_assignable_v<optional5>);
+  ASSERT_FALSE(std::is_copy_assignable_v<optional6>);
 }
 
-struct only_move_constructible {
-  only_move_constructible(const only_move_constructible&) = delete;
-  only_move_constructible(only_move_constructible&&) = default;
-  only_move_constructible& operator=(const only_move_constructible&) = delete;
-  only_move_constructible& operator=(only_move_constructible&&) = delete;
-
-  std::vector<int> v;
-};
-
-TEST(optional_traits, only_move_constructible) {
-  EXPECT_FALSE(std::is_copy_constructible_v<optional<only_move_constructible>>);
-  EXPECT_FALSE(std::is_copy_assignable_v<optional<only_move_constructible>>);
-  EXPECT_TRUE(std::is_move_constructible_v<optional<only_move_constructible>>);
-  EXPECT_FALSE(std::is_move_assignable_v<optional<only_move_constructible>>);
+TEST(traits, move_assignment) {
+  using optional1 = optional<no_move_t>;
+  using optional2 = optional<no_move_assignment_t>;
+  using optional3 = optional<dummy_t>;
+  using optional4 = optional<std::string>;
+  using optional5 = optional<dummy_t>;
+  using optional6 = optional<throwing_move_operator_t>;
+  using optional7 = optional<no_move_t>;
+  ASSERT_FALSE(std::is_move_assignable_v<optional1>);
+  ASSERT_FALSE(std::is_move_assignable_v<optional2>);
+  ASSERT_TRUE(std::is_move_assignable_v<optional3>);
+  ASSERT_TRUE(std::is_move_assignable_v<optional4>);
+  ASSERT_TRUE(std::is_move_assignable_v<optional5>);
+  ASSERT_FALSE(std::is_trivially_move_assignable_v<optional3>);
+  ASSERT_FALSE(std::is_trivially_move_assignable_v<optional4>);
+  ASSERT_TRUE(std::is_trivially_move_assignable_v<optional5>);
+  ASSERT_TRUE(std::is_move_assignable_v<optional6>);
+  ASSERT_FALSE(std::is_nothrow_move_assignable_v<optional6>);
+  ASSERT_TRUE(std::is_nothrow_move_assignable_v<optional3>);
+  ASSERT_TRUE(std::is_nothrow_move_assignable_v<optional4>);
+  ASSERT_TRUE(std::is_nothrow_move_assignable_v<optional5>);
+  ASSERT_FALSE(std::is_move_assignable_v<optional7>);
 }
-
-struct nothing {
-  nothing(const nothing&) = delete;
-  nothing(nothing&&) = delete;
-  nothing& operator=(const nothing&) = delete;
-  nothing& operator=(nothing&&) = delete;
-
-  std::vector<int> v;
-};
-
-TEST(optional_traits, nothing) {
-  EXPECT_FALSE(std::is_copy_constructible_v<optional<nothing>>);
-  EXPECT_FALSE(std::is_copy_assignable_v<optional<nothing>>);
-  EXPECT_FALSE(std::is_move_constructible_v<optional<nothing>>);
-  EXPECT_FALSE(std::is_move_assignable_v<optional<nothing>>);
-}
-
-struct non_trivial_nothing {
-  non_trivial_nothing(const non_trivial_nothing&) = delete;
-  non_trivial_nothing(non_trivial_nothing&&) = delete;
-  non_trivial_nothing& operator=(const non_trivial_nothing&) = delete;
-  non_trivial_nothing& operator=(non_trivial_nothing&&) = delete;
-
-  std::vector<int> data;
-};
-
-TEST(optional_traits, non_trivial_nothing) {
-  EXPECT_FALSE(std::is_copy_constructible_v<optional<non_trivial_nothing>>);
-  EXPECT_FALSE(std::is_copy_assignable_v<optional<non_trivial_nothing>>);
-  EXPECT_FALSE(std::is_move_constructible_v<optional<non_trivial_nothing>>);
-  EXPECT_FALSE(std::is_move_assignable_v<optional<non_trivial_nothing>>);
-}
-
-} // namespace
 
 static_assert([] {
   optional<cvalue> a;
