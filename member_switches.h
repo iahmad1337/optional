@@ -1,5 +1,7 @@
 #pragma once
 
+namespace detail {
+
 /*******************************************************************************
  *                          Copy construction switch                           *
  *******************************************************************************/
@@ -71,3 +73,5 @@ struct enable_move_assignment {
 
 template <>
 struct enable_move_assignment<true> {};
+
+} // namespace detail
