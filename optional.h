@@ -9,23 +9,21 @@
 
 template <typename T>
 class optional
-    : private detail::move_assign_base<T>,
-      public detail::enable_copy_construction<std::is_copy_constructible_v<T>>,
-      public detail::enable_copy_assignment<std::is_copy_assignable_v<T> &&
-                                            std::is_copy_constructible_v<T>>,
-      public detail::enable_move_construction<std::is_move_constructible_v<T>>,
-      public detail::enable_move_assignment<std::is_move_assignable_v<T> &&
-                                            std::is_move_constructible_v<T>> {
+    : public detail::move_assign_base<T>,
+      private detail::enable_copy_construction<std::is_copy_constructible_v<T>>,
+      private detail::enable_copy_assignment<std::is_copy_assignable_v<T> &&
+                                             std::is_copy_constructible_v<T>>,
+      private detail::enable_move_construction<std::is_move_constructible_v<T>>,
+      private detail::enable_move_assignment<std::is_move_assignable_v<T> &&
+                                             std::is_move_constructible_v<T>> {
   using base = detail::move_assign_base<T>;
 
 public:
-  using base::base;
-  using base::operator=;
-  constexpr optional() noexcept : base{} {}
+  constexpr optional() noexcept = default;
 
-  constexpr optional(const T& value_) : base{value_} {}
+  constexpr optional(const T& value_) : base{in_place, value_} {}
 
-  constexpr optional(T&& value_) : base{std::move(value_)} {}
+  constexpr optional(T&& value_) : base{in_place, std::move(value_)} {}
 
   template <typename... Args>
   constexpr optional(in_place_t, Args&&... args)
@@ -69,10 +67,6 @@ public:
     this->reset();
     new (&(this->value)) T{std::forward<Args>(args)...};
     this->active = true;
-  }
-
-  void reset() noexcept {
-    this->base::reset();
   }
 
   [[nodiscard]] bool has_value() const noexcept {

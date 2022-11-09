@@ -35,10 +35,6 @@ struct storage_base {
   constexpr storage_base& operator=(storage_base&&) = default;
   constexpr storage_base& operator=(const storage_base&) = default;
 
-  constexpr storage_base(const T& value_) : active{true}, value{value_} {}
-
-  constexpr storage_base(T&& value_) : active{true}, value{std::move(value_)} {}
-
   template <typename... Args>
   constexpr storage_base(in_place_t, Args&&... args)
       : active{true}, value{std::forward<Args>(args)...} {}
@@ -65,10 +61,6 @@ struct storage_base<T, true> {
   constexpr storage_base(storage_base&&) = default;
   constexpr storage_base& operator=(storage_base&&) = default;
   constexpr storage_base& operator=(const storage_base&) = default;
-
-  constexpr storage_base(const T& value_) : active{true}, value{value_} {}
-
-  constexpr storage_base(T&& value_) : active{true}, value{std::move(value_)} {}
 
   template <typename... Args>
   constexpr storage_base(in_place_t, Args&&... args)
@@ -171,7 +163,6 @@ struct move_ctor_base : copy_assign_base<T> {
     this->active = other.active;
     if (other.active) {
       new (&(this->value)) T{std::move(other.value)};
-      other.reset();
     }
   }
 };
@@ -217,7 +208,6 @@ struct move_assign_base : move_ctor_base<T> {
     } else {
       new (&(this->value)) T{std::move(other.value)};
     }
-    other.reset();
     this->active = true;
     return *this;
   }
