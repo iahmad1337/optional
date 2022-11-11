@@ -19,6 +19,8 @@ class optional
   using base = detail::move_assign_base<T>;
 
 public:
+  using base::base;
+  using base::operator=;
   constexpr optional() noexcept = default;
 
   constexpr optional(const T& value_) : base{in_place, value_} {}
